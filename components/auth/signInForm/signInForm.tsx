@@ -18,7 +18,7 @@ import Apis from "../../../constants/apis";
 import requestUtils from "../../../constants/utils/requestUtils";
 
 import useReducerDispatch from "../../../hooks/useReducerDispatch";
-import { login, setIsLoading } from "../../../reducers/auth/authSlice";
+import { login, setIsLoading, setSsoUrl } from "../../../reducers/auth/authSlice";
 import useErrorHandling from "../../../hooks/useErrorHandling";
 import useSliceSelector from "../../../hooks/useSliceSelector";
 
