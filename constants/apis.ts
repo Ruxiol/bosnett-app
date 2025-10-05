@@ -5,7 +5,10 @@ enum Apis {
     loginApi = `${baseUrl}login`,
     signupApi = `${baseUrl}signup`,
     profileApi = `${baseUrl}profile`,
-    newsFeedApi = `${baseUrl}/users/feed-post`,
+    newsFeedApi = `${baseUrl}/newsfeed`,         // proxy na WP activity feed
+    // (po želji dodaj i ova dva)
+    newsFeedRawApi = `${baseUrl}/newsfeed/raw`,
+    newsFeedCountApi = `${baseUrl}/newsfeed/count`,
     accountRecoveryEmail = `${baseUrl}password/email`,
     accountVerificationCode = `${baseUrl}password/verify-otp`,
     accountChangePassword = `${baseUrl}reset/password`,
