@@ -74,34 +74,60 @@ const SignInForm = () => {
     };
 
     const handleSignIn = useCallback(async (values: RequestData) => {
-        try {
-            dispatch(setIsLoading(true));
-            const trimmedUsername = values.email_or_username.trim();
-
-            const { data } = await requestUtils.request<IProfileData, RequestData>(
-                Apis.loginApi,
-                "POST",
-                {
-                    email_or_username: trimmedUsername,
-                    password: values.password,
-                }
-            );
-
-            if (data) {
-                await AsyncStorage.setItem("token", JSON.stringify(data.token));
-                handleRememberMe({ ...values, email_or_username: trimmedUsername });
-                dispatch(setIsLoading(false));
-                dispatch(login());
-            }
-        } catch (error) {
-            dispatch(setIsLoading(false));
-            handleError(error)
-            formik.setErrors({
-                email_or_username: formik.errors.email_or_username,
-                password: formik.errors.password
-            });
+      dispatch(setIsLoading(true));
+      try {
+        const trimmedUsername = values.email_or_username.trim();
+    
+        // Login prema tvom backendu (koji vraća { token, ssoUrl, ... })
+        const { data } = await requestUtils.request<IProfileData, RequestData>(
+          Apis.loginApi,
+          "POST",
+          {
+            email_or_username: trimmedUsername,
+            password: values.password,
+          }
+        );
+    
+        // Tip-safe fallback (jer backend vraća i extra polja)
+        const anyData = data as unknown as {
+          token?: unknown;
+          ssoUrl?: string;
+          [k: string]: any;
+        };
+    
+        // 1) Sačuvaj token (ako ga ima)
+        if (anyData?.token) {
+          await AsyncStorage.setItem("token", JSON.stringify(anyData.token));
         }
-    }, [dispatch, handleRememberMe, handleError])
+    
+        // 2) Sačuvaj SSO URL (ako ga backend šalje)
+        if (anyData?.ssoUrl) {
+          await AsyncStorage.setItem("ssoUrl", anyData.ssoUrl);
+          dispatch(setSsoUrl(anyData.ssoUrl));
+        } else {
+          // (Opcionalno) Ako ga nema, očisti staru vrijednost
+          await AsyncStorage.removeItem("ssoUrl");
+          dispatch(setSsoUrl(undefined));
+        }
+    
+        // 3) Remember me (tvoja postojeća logika)
+        await handleRememberMe({ ...values, email_or_username: trimmedUsername });
+    
+        // 4) Uključi authenticated state
+        dispatch(login());
+      } catch (error) {
+        // UI/validacija poruke
+        handleError(error);
+        formik.setErrors({
+          email_or_username: formik.errors.email_or_username,
+          password: formik.errors.password,
+        });
+      } finally {
+        // Uvijek ugasi loader
+        dispatch(setIsLoading(false));
+      }
+    }, [dispatch, handleRememberMe, handleError]);
+
 
     const formik = useFormik({
         initialValues: {
