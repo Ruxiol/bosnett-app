@@ -78,7 +78,7 @@ const SignInForm = () => {
       try {
         const trimmedUsername = values.email_or_username.trim();
     
-        // Login prema tvom backendu (koji vraća { token, ssoUrl, ... })
+        // Login prema backendu (vraća { token, wpToken, ssoUrl, ... } u data)
         const { data } = await requestUtils.request<IProfileData, RequestData>(
           Apis.loginApi,
           "POST",
@@ -88,45 +88,49 @@ const SignInForm = () => {
           }
         );
     
-        // Tip-safe fallback (jer backend vraća i extra polja)
-        const anyData = data as unknown as {
-          token?: unknown;
-          ssoUrl?: string;
-          [k: string]: any;
-        };
+        if (data) {
+          // 1) App JWT
+          if ((data as any).token) {
+            await AsyncStorage.setItem("token", JSON.stringify((data as any).token));
+          } else {
+            await AsyncStorage.removeItem("token");
+          }
     
-        // 1) Sačuvaj token (ako ga ima)
-        if (anyData?.token) {
-          await AsyncStorage.setItem("token", JSON.stringify(anyData.token));
+          // 2) WP JWT (koristi se za X-WP-Token prema /newsfeed)
+          const wpToken = (data as any).wpToken || (data as any)?.user?.wpToken || null;
+          if (wpToken) {
+            await AsyncStorage.setItem("wpToken", wpToken);
+          } else {
+            await AsyncStorage.removeItem("wpToken");
+          }
+    
+          // 3) SSO URL (ako backend šalje – ostavljamo za kasniju upotrebu)
+          const ssoUrl = (data as any).ssoUrl || null;
+          if (ssoUrl) {
+            await AsyncStorage.setItem("ssoUrl", ssoUrl);
+            dispatch(setSsoUrl(ssoUrl));
+          } else {
+            await AsyncStorage.removeItem("ssoUrl");
+            dispatch(setSsoUrl(undefined));
+          }
+    
+          // 4) Zapamti kredencijale (tvoja postojeća logika)
+          await handleRememberMe({ ...values, email_or_username: trimmedUsername });
+    
+          // 5) Authed state
+          dispatch(login());
         }
-    
-        // 2) Sačuvaj SSO URL (ako ga backend šalje)
-        if (anyData?.ssoUrl) {
-          await AsyncStorage.setItem("ssoUrl", anyData.ssoUrl);
-          dispatch(setSsoUrl(anyData.ssoUrl));
-        } else {
-          // (Opcionalno) Ako ga nema, očisti staru vrijednost
-          await AsyncStorage.removeItem("ssoUrl");
-          dispatch(setSsoUrl(undefined));
-        }
-    
-        // 3) Remember me (tvoja postojeća logika)
-        await handleRememberMe({ ...values, email_or_username: trimmedUsername });
-    
-        // 4) Uključi authenticated state
-        dispatch(login());
       } catch (error) {
-        // UI/validacija poruke
         handleError(error);
         formik.setErrors({
           email_or_username: formik.errors.email_or_username,
           password: formik.errors.password,
         });
       } finally {
-        // Uvijek ugasi loader
         dispatch(setIsLoading(false));
       }
     }, [dispatch, handleRememberMe, handleError]);
+
 
 
     const formik = useFormik({
