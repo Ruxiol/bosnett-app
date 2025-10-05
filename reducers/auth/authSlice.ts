@@ -23,25 +23,19 @@ const initialState: AuthStateInterface = {
         friendRequestsSent: [],
         notificationToken: ''
     }
+    ssoUrl: undefined,
 };
 
 const authSlice = createSlice({
-    name: 'auth',
-    initialState,
-    reducers: {
-        login(state) {
-            state.isAuthenticated = true
-        },
-        logout(state) {
-            state.isAuthenticated = false
-        },
-        setIsLoading(state, action: PayloadAction<boolean>) {
-            state.isLoading = action.payload
-        },
-        setUserData(state, action: PayloadAction<IProfileData>) {
-            state.userData = action.payload
-        }
-    },
+  name: 'auth',
+  initialState,
+  reducers: {
+    login(state) { state.isAuthenticated = true },
+    logout(state) { state.isAuthenticated = false; state.ssoUrl = undefined; },
+    setIsLoading(state, action: PayloadAction<boolean>) { state.isLoading = action.payload },
+    setUserData(state, action: PayloadAction<IProfileData>) { state.userData = action.payload },
+    setSsoUrl(state, action: PayloadAction<string | undefined>) { state.ssoUrl = action.payload }, // <--- NOVO
+  },
 });
 
 export const {
