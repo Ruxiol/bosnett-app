@@ -4,4 +4,5 @@ export default interface AuthStateInterface {
     isAuthenticated: boolean;
     isLoading: boolean;
     userData: IProfileData;
+    ssoUrl?: string;
 }
